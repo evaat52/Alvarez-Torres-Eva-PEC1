@@ -90,9 +90,9 @@ ggplot(meta, aes(x = SURGERY, y = AGE, fill = SURGERY)) +
 ggplot(meta, aes(x = GENDER, y = AGE, fill = GENDER)) +
   geom_boxplot() + theme_minimal()
 
-# 4. Estudio de homogeneidad en T0
+# 5. Estudio de homogeneidad en T0
 
-# 4.1 Análisis de componentes principales en T0
+# 5.1 Análisis de componentes principales en T0
 # Extraer la matriz de datos de los metabolitos (o un subconjunto)
 vars_T0 <- grep("_T0$", rownames(se), value = TRUE)
 matriz_T0 <- t(assay(se)[vars_T0, ])  # Pacientes en filas, variables en columnas
@@ -117,7 +117,7 @@ ggplot(pca_df, aes(x = PC1, y = PC2, color = Surgery, shape = Group)) +
        y = paste0("PC2 (", round(100 * summary(pca_res)$importance[2, 2], 1), "%)")) +
   theme_minimal()
 
-# 4.2 Creación de mapa de calor
+# 5.2 Creación de mapa de calor
 # Selección y normalización
 matriz <- assay(se)
 desviaciones <- apply(matriz, 1, sd, na.rm = TRUE)
@@ -132,7 +132,7 @@ pheatmap(matriz_escalada,
          main = "Heatmap: Top 30 metabolitos más variables",
          fontsize_row = 6)
 
-# 4.3 Prueba t para cada metabolito en T0 entre tipos de cirugía
+# 5.3 Prueba t para cada metabolito en T0 entre tipos de cirugía
 metabolitos_T0 <- grep("_T0$", rownames(se), value = TRUE)
 resultados <- lapply(metabolitos_T0, function(met) {
   valores <- assay(se)[met, ]
@@ -147,4 +147,3 @@ resultados <- lapply(metabolitos_T0, function(met) {
 })
 resultados_df <- do.call(rbind, resultados)
 head(resultados_df[order(resultados_df$p_valor), ], 10)
-
