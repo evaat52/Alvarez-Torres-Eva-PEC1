@@ -317,3 +317,13 @@ boxplot_cirugia("HDL", "T5")
 boxplot_cirugia("HBA1C", "T0")
 boxplot_cirugia("HBA1C", "T5")
 
+# 7. Explorar si la evolución favorable de los metabolitos se correlaciona con la pérdida de peso
+
+peso <- assay(se)[c("PESO_T0", "PESO_T5"), ]
+pérdida_peso <- peso["PESO_T0", ] - peso["PESO_T5", ]
+colData(se)$perdida_peso <- pérdida_peso
+
+datos <- as.data.frame(colData(se))
+cor.test(datos$perdida_peso, assay(se)["LDL_T5", ])
+cor.test(datos$perdida_peso, assay(se)["HDL_T5", ])
+cor.test(datos$perdida_peso, assay(se)["HBA1C_T5", ])
