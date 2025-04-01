@@ -147,3 +147,173 @@ resultados <- lapply(metabolitos_T0, function(met) {
 })
 resultados_df <- do.call(rbind, resultados)
 head(resultados_df[order(resultados_df$p_valor), ], 10)
+
+
+# 6. Tendencias de metabolitos de importancia clínica y medidas antropométricas
+
+#Tendencias de los metabolitos y medidas fundamentales de salud metabólica en función del grupo
+plot_mean_se_se <- function(var_base) {
+  tiempos <- c("T0", "T2", "T4", "T5")
+  filas_var <- paste0(var_base, "_", tiempos)
+  
+  # Verificar que existen en el objeto
+  filas_existentes <- filas_var[filas_var %in% rownames(se)]
+  if (length(filas_existentes) < 2) {
+    message("No hay suficientes tiempos para: ", var_base)
+    return(NULL)
+  }
+  
+  # Extraer datos y reorganizar
+  datos <- t(assay(se)[filas_existentes, ])
+  colnames(datos) <- gsub(paste0(var_base, "_"), "", filas_existentes)
+  df <- cbind(as.data.frame(colData(se)), datos)
+  
+  # Pasar a formato largo
+  df_long <- melt(df, id.vars = c("SUBJECTS", "Group", "SURGERY", "GENDER"),
+                  variable.name = "Tiempo", value.name = var_base)
+  # Limpiar valores no válidos en la columna Tiempo
+  df_long <- df_long[df_long$Tiempo %in% tiempos, ]
+  df_long$Tiempo <- factor(df_long$Tiempo, levels = tiempos)
+  df_long$Group <- as.factor(df_long$Group)
+  
+  # Calcular medias y error estándar
+  stat_df <- df_long %>%
+    group_by(Tiempo, Group) %>%
+    summarise(
+      media = mean(.data[[var_base]], na.rm = TRUE),
+      se = sd(.data[[var_base]], na.rm = TRUE)/sqrt(n())
+    )
+  
+  # Graficar
+  ggplot(stat_df, aes(x = Tiempo, y = media, group = Group, color = Group)) +
+    geom_line(size = 1.2) +
+    geom_point(size = 2) +
+    geom_errorbar(aes(ymin = media - se, ymax = media + se), width = 0.2) +
+    labs(title = paste("Evolución de", var_base, "por grupo"),
+         y = var_base, x = "Tiempo") +
+    theme_minimal()
+}
+
+plot_mean_se_se("PESO")
+plot_mean_se_se("bmi")
+plot_mean_se_se("CINT")
+plot_mean_se_se("CAD")
+plot_mean_se_se("HBA1C")
+plot_mean_se_se("LDL")
+plot_mean_se_se("HDL")
+
+
+#Tendencias de los metabolitos y medidas fundamentales de salud metabólica en función del tipo de cirugía
+plot_mean_se_se_by_surgery <- function(var_base) {
+  tiempos <- c("T0", "T2", "T4", "T5")
+  filas_var <- paste0(var_base, "_", tiempos)
+  
+  # Verificar que existen
+  filas_existentes <- filas_var[filas_var %in% rownames(se)]
+  if (length(filas_existentes) < 2) {
+    message("No hay suficientes tiempos para: ", var_base)
+    return(NULL)
+  }
+  
+  # Extraer datos
+  datos <- t(assay(se)[filas_existentes, ])
+  colnames(datos) <- gsub(paste0(var_base, "_"), "", filas_existentes)
+  df <- cbind(as.data.frame(colData(se)), datos)
+  
+  # Pasar a formato largo
+  df_long <- melt(df, id.vars = c("SUBJECTS", "Group", "SURGERY", "GENDER"),
+                  variable.name = "Tiempo", value.name = var_base)
+  # Limpiar valores no válidos en la columna Tiempo
+  df_long <- df_long[df_long$Tiempo %in% tiempos, ]
+  df_long$Tiempo <- factor(df_long$Tiempo, levels = tiempos)
+  df_long$SURGERY <- as.factor(df_long$SURGERY)
+  
+  # Calcular medias y error estándar por cirugía
+  stat_df <- df_long %>%
+    group_by(Tiempo, SURGERY) %>%
+    summarise(
+      media = mean(.data[[var_base]], na.rm = TRUE),
+      se = sd(.data[[var_base]], na.rm = TRUE)/sqrt(n())
+    )
+  
+  # Graficar
+  ggplot(stat_df, aes(x = Tiempo, y = media, group = SURGERY, color = SURGERY)) +
+    geom_line(size = 1.2) +
+    geom_point(size = 2) +
+    geom_errorbar(aes(ymin = media - se, ymax = media + se), width = 0.2) +
+    labs(title = paste("Evolución de", var_base, "por tipo de cirugía"),
+         y = var_base, x = "Tiempo", color = "Cirugía") +
+    theme_minimal()
+}
+plot_mean_se_se_by_surgery("PESO")
+plot_mean_se_se_by_surgery("bmi")
+plot_mean_se_se_by_surgery("CINT")
+plot_mean_se_se_by_surgery("CAD")
+plot_mean_se_se_by_surgery("HBA1C")
+plot_mean_se_se_by_surgery("LDL")
+plot_mean_se_se_by_surgery("HDL")
+
+
+# 6.1 Evolución de LDL según tipo de cirugía 
+# Extraer valores LDL_T0 y LDL_T5
+ldl_df <- data.frame(
+  LDL_T0 = assay(se)["LDL_T0", ],
+  LDL_T5 = assay(se)["LDL_T5", ],
+  SURGERY = colData(se)$SURGERY
+)
+
+ldl_df %>%
+  group_by(SURGERY) %>%
+  summarise(
+    media_T0 = mean(LDL_T0, na.rm = TRUE),
+    media_T5 = mean(LDL_T5, na.rm = TRUE),
+    diferencia = media_T5 - media_T0
+  )
+
+# Crear dataframe con LDL_T0, LDL_T5 y cirugía
+ldl_test_df <- data.frame(
+  LDL_T0 = assay(se)["LDL_T0", ],
+  LDL_T5 = assay(se)["LDL_T5", ],
+  SURGERY = colData(se)$SURGERY
+)
+
+# Calcular el cambio individual
+ldl_test_df$LDL_cambio <- ldl_test_df$LDL_T5 - ldl_test_df$LDL_T0
+
+# Realizar el t-test
+t.test(LDL_cambio ~ SURGERY, data = ldl_test_df)
+
+# ANOVA para LDL
+df_ldl <- data.frame(
+  LDL = c(assay(se)[paste0("LDL_T0"), ],
+          assay(se)[paste0("LDL_T5"), ]),
+  Tiempo = rep(c("T0", "T5"), each = ncol(se)),
+  Cirugía = rep(colData(se)$SURGERY, 2)
+)
+anova_result <- aov(LDL ~ Tiempo * Cirugía, data = df_ldl)
+summary(anova_result)
+
+# 6.2 Metabolitos en tiempo 0 y tiempo 5 según cirugía
+
+# Función para generar boxplots comparativos por cirugía
+boxplot_cirugia <- function(var_base, tiempo) {
+  var <- paste0(var_base, "_", tiempo)
+  df <- data.frame(
+    valor = assay(se)[var, ],
+    SURGERY = colData(se)$SURGERY
+  )
+  
+  ggplot(df, aes(x = SURGERY, y = valor, fill = SURGERY)) +
+    geom_boxplot() +
+    labs(title = paste("Boxplot de", var_base, "en", tiempo),
+         y = var_base, x = "Cirugía") +
+    theme_minimal()
+}
+
+boxplot_cirugia("LDL", "T0")
+boxplot_cirugia("LDL", "T5")
+boxplot_cirugia("HDL", "T0")
+boxplot_cirugia("HDL", "T5")
+boxplot_cirugia("HBA1C", "T0")
+boxplot_cirugia("HBA1C", "T5")
+
