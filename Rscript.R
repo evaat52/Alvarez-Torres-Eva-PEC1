@@ -333,3 +333,46 @@ datos <- as.data.frame(colData(se))
 cor.test(datos$perdida_peso, assay(se)["LDL_T5", ])
 cor.test(datos$perdida_peso, assay(se)["HDL_T5", ])
 cor.test(datos$perdida_peso, assay(se)["HBA1C_T5", ])
+
+#8. Crear archivo markdown con los metadatos
+
+# Otras librerías necesarias
+library(knitr)
+library(tibble)
+
+# Extraer metadatos del objeto se
+metadatos <- as.data.frame(colData(se))
+
+# Crear tabla de descripciones
+descripciones <- tibble(
+  Variable = colnames(metadatos),
+  Descripción = c(
+    "Orden de los pacientes",
+    "Identificador de los pacientes",
+    "Técnica quirúrgica realizada (bypass gástrico; gastrectomía tubular)",
+    "Edad en años",
+    "Género (masculino; femenino)",
+    "Grupo fenotípico (metabólicamente sano, metabólicamente no sano)"
+  )
+)
+
+# Generar archivo markdown
+cabecera <- c(
+  "# Descripción de metadatos\n",
+  paste0("Archivo generado el ", Sys.Date(), "\n\n"),
+  "A continuación se describen las variables clínicas contenidas en el dataset y en el objeto `SummarizedExperiment` creado a partir de él.\n"
+)
+
+
+tabla_descripciones_md <- knitr::kable(descripciones, format = "markdown")
+tabla_metadatos_md <- knitr::kable(metadatos, format = "markdown", caption = "Tabla 2. Metadatos de los 39 pacientes")
+
+
+writeLines(c(
+    cabecera,
+    "\n", tabla_descripciones_md, "\n\n",
+    "A continuación se muestra la tabla completa de los metadatos asociados a los pacientes incluidos en el estudio:\n\n",
+    tabla_metadatos_md
+), "descripcion_y_metadatos.md")
+          
+
