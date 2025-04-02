@@ -623,7 +623,6 @@ Su principal diferencia con ExpressionSet es que este último es más antiguo y 
 ### Pregunta 4: guardar el SummarizedExperiment Object
 
 ```{r}
-dir.create("data", showWarnings = FALSE)
 save(se, file = "SummarizedExperiment.Rda")
 ```
 
