@@ -1,0 +1,628 @@
+---
+title: "Informe_PEC1"
+author: "Eva Álvarez Torres"
+date: "2025-03-31"
+output: 
+  word_document:
+    toc: true
+    toc_depth: 2
+    number_sections: true
+---
+
+```{r include = FALSE}
+# Librerías necesarias para todo el informe
+library(SummarizedExperiment)
+library(tidyverse)
+library(reshape2)
+library(ggplot2)
+library(ggpubr)
+library(pheatmap)
+library(scales)
+library(dplyr)
+library(ggpubr)
+```
+
+```{r include = FALSE}
+# Cargar objeto
+load("data/SummarizedExperiment.Rda")
+```
+
+
+# RESUMEN
+
+Se analizaron datos de 39 pacientes sometidos a cirugía bariátrica (bypass gástrico o gastrectomía tubular) con el objetivo de evaluar la evolución de variables fisiológicas y metabolómicas a lo largo del tiempo. Se construyó un objeto SummarizedExperiment para organizar los datos y se realizó un análisis exploratorio mediante gráficos de tendencias, PCA, heatmaps y pruebas estadísticas.
+
+Se observó una disminución sostenida del peso, del índice de masa corporal (IMC) y de las medidas antropométricas, junto con una mejoría en la hemoglobina glicada (HBA1C). El análisis de varianza (ANOVA) reveló una interacción significativa entre el tiempo y el tipo de cirugía en la evolución del colesterol LDL, lo que sugiere que su trayectoria depende de la técnica quirúrgica empleada. En conjunto, los resultados indican un beneficio metabólico global de la cirugía bariátrica, con un perfil lipídico más favorable tras el bypass gástrico.
+
+
+# OBJETIVOS
+
+Se analizaron los datos de 39 pacientes obesos sometidos a cirugía bariátrica con los siguientes objetivos: 
+
+  1.	Analizar si la cirugía bariátrica tiene un impacto positivo en la salud metabólica de los pacientes.
+
+  2.	Evaluar si existen diferencias en la respuesta fisiológica y metabolómica en función de la técnica quirúrgica utilizada (bypass   vs. tubular).
+
+  3.	Explorar la posible correlación entre la pérdida de peso y la evolución de metabolitos clave como LDL, HDL y hemoglobina         glicada.
+
+Se decidió focalizar el análisis estos tres metabolitos debido a su relevancia clínica en el contexto del síndrome metabólico, el riesgo cardiovascular y el control glucémico. Estos indicadores son de uso habitual en la evaluación de pacientes sometidos a cirugía bariátrica, y su evolución puede aportar información directa sobre la eficacia del tratamiento.
+
+# MÉTODOS
+
+Se utilizó un dataset importado desde el repositorio recomendado en el enunciado en formato .cvs analizado en RStudio mediante un documento RMarkdown. Inicialmente, el desarrollo se realizó de forma local, y posteriormente se generó un script en R con control de versiones mediante Git. Se creó un repositorio GitHub donde incluir el proyecto completo y cuyo enlace está disponible en el *apartado 7: Referencias*.
+
+El dataset incluía 39 pacientes y 690 variables, de las cuales 6 correspondían a metadatos (edad, sexo, grupo, tipo de cirugía) y las restantes a medidas fisiológicas y metabolómicas repetidas en cuatro tiempos: T0 (antes de la cirugía), T2, T4 y T5. 
+
+Se creó un objeto SummarizedExperiment, que permite almacenar de forma estructurada los datos cuantitativos (assay) y metadatos (colData). Este objeto se utiliza habitualmente en bioinformática por su versatilidad y estructura clara.
+
+```{r include = FALSE}
+# Ver estructura del SummarizedExperiment Object
+str(se)
+```
+SummarizedExperiment funciona como un contenedor de matrices, donde las filas representan los metabolitos de interés y las columnas las observaciones. Un objeto de esta clase puede contener uno o más assays, cada uno con múltiples matrices de datos, permitiendo almacenar diferentes tipos de mediciones.
+
+Su principal diferencia con ExpressionSet es que este último es más antiguo y menos flexible, pensado específicamente para transcriptómica. ExpressionSet solo admite una única matriz de expresión, mientras que SummarizedExperiment permite trabajar con múltiples matrices y maneja de forma más estructurada los metadatos de filas (rowData) y columnas (colData).
+
+Se llevó a cabo un análisis exploratorio estructurado en:
+  1.	Descripción de los metadatos (tablas de frecuencia, histogramas, boxplots).
+  2.	Exploración homogeneidad de grupos de tratamiento
+      a.	Análisis de Componentes Principales (PCA) para explorar la homogeneidad de los grupos en T0. 
+      b.	Selección de los 30 metabolitos con mayor variabilidad y representación de heatmap para evaluar posibles clusters. 
+      c.	Identificación de los 10 metabolitos con mayor diferencia entre cirugías en T0.
+  3.	Gráficos de evolución temporal para variables clave como PESO, IMC, CINTURA, CAD, HBA1C, LDL y HDL, estratificados por grupo y   tipo de cirugía.
+  4.	Análisis de correlación entre pérdida de peso y metabolitos en T5.
+  5.	Comparación de cambios en LDL entre técnicas quirúrgicas mediante t-test y análisis de la varianza.
+
+ Se utilizaron las siguientes herramientas: tidyverse, reshape2, ggplot2, stats, SummarizedExperiment, Bioconductor.
+ 
+# RESULTADOS
+
+La muestra incluyó 39 pacientes, 27 mujeres y 12 hombres, distribuidos en 24 pacientes en el grupo 1 y 15 en el grupo 2. En cuanto al tipo de cirugía, 26 fueron sometidos a bypass gástrico y 13 a gastrectomía tubular. La distribución por edad fue homogénea entre grupos quirúrgicos **(figura 1)**
+
+```{r include = FALSE}
+# Extraer metadatos
+meta <- as.data.frame(colData(se))
+
+# Tablas básicas
+table(meta$SURGERY)
+table(meta$Group)
+table(meta$GENDER)
+
+# Histograma de edad
+ggplot(meta, aes(x = as.numeric(AGE))) +
+  geom_histogram(binwidth = 5, fill = "skyblue", color = "white") +
+  labs(title = "Distribución de edades", x = "Edad", y = "Frecuencia") +
+  theme_minimal()
+
+#Distribución de edad por sexo
+ggplot(meta, aes(x = GENDER, y = AGE, fill = GENDER)) +
+  geom_boxplot() + theme_minimal()
+```
+
+
+```{r boxplot-edad-cirugia, echo=FALSE, fig.cap="Figura 1. Distribución de edad por tipo de cirugía"}
+ggplot(meta, aes(x = SURGERY, y = AGE, fill = SURGERY)) +
+  geom_boxplot() + theme_minimal()
+```
+
+El análisis de componentes principales (PCA) a tiempo 0  (T0) no mostró una separación clara entre los grupos ni entre tipos de cirugía, lo que sugiere una adecuada homogeneidad basal entre las cohortes. Esta observación se refuerza con el heatmap generado a partir de los 30 metabolitos con mayor variabilidad, el cual evidenció patrones de expresión heterogéneos pero sin agrupamientos sistemáticos atribuibles a la técnica quirúrgica o al grupo. **(Imágenes 2 y 3)**
+
+```{r PCA-T0,  echo=FALSE, fig.cap="Figura 2. PCA sobre metabolitos a tiempo 0 (T_0)"}
+#Análisis de componentes principales en T0
+# Extraer la matriz de datos de los metabolitos (o un subconjunto)
+vars_T0 <- grep("_T0$", rownames(se), value = TRUE)
+matriz_T0 <- t(assay(se)[vars_T0, ])  # Pacientes en filas, variables en columnas
+
+# Quitar columnas con NA
+matriz_T0 <- matriz_T0[, colSums(is.na(matriz_T0)) == 0]
+
+# PCA con centrado y escalado
+pca_res <- prcomp(matriz_T0, scale. = TRUE)
+
+# Convertir a data frame para ggplot
+pca_df <- as.data.frame(pca_res$x)
+pca_df$Surgery <- colData(se)$SURGERY
+pca_df$Group <- as.factor(colData(se)$Group)
+
+# Plot con ggplot2
+library(ggplot2)
+ggplot(pca_df, aes(x = PC1, y = PC2, color = Surgery, shape = Group)) +
+  geom_point(size = 3) +
+  labs(title = "PCA sobre metabolitos en T0",
+       x = paste0("PC1 (", round(100 * summary(pca_res)$importance[2, 1], 1), "%)"),
+       y = paste0("PC2 (", round(100 * summary(pca_res)$importance[2, 2], 1), "%)")) +
+  theme_minimal()
+
+```
+
+
+```{r heatmap-30-metabolitos-variables, echo=FALSE, fig.cap = "Figura 3. Heatmap de los 30 metabolitos más variables"}
+# 1. Selección y normalización
+matriz <- assay(se)
+desviaciones <- apply(matriz, 1, sd, na.rm = TRUE)
+top30 <- names(sort(desviaciones, decreasing = TRUE))[1:30]
+matriz_top30 <- matriz[top30, ]
+matriz_top30 <- matriz_top30[apply(matriz_top30, 1, function(x) all(!is.na(x))), ]
+matriz_escalada <- t(scale(t(matriz_top30)))
+
+# 2. Heatmap 
+pheatmap(matriz_escalada,
+         show_rownames = TRUE,
+         main = "Heatmap: Top 30 metabolitos más variables",
+         fontsize_row = 6)
+
+```
+Aunque el análisis global mediante PCA y heatmap no mostró una separación clara entre los grupos quirúrgicos en el momento basal (T0), las pruebas t realizadas individualmente para cada metabolito identificaron diferencias estadísticamente significativas en algunos casos concretos, como C14.1, Ala, HOMA y varios lysoPC. Esto sugiere una cierta heterogeneidad metabólica de base en variables específicas.
+
+No obstante, al no observarse agrupamientos sistemáticos ni patrones de clustering claros, puede considerarse que los grupos son globalmente homogéneos al inicio del estudio.
+
+```{r  include = FALSE}
+# Prueba t para cada metabolito en T0 entre tipos de cirugía
+metabolitos_T0 <- grep("_T0$", rownames(se), value = TRUE)
+resultados <- lapply(metabolitos_T0, function(met) {
+  valores <- assay(se)[met, ]
+  cirugia <- colData(se)$SURGERY
+  t_test <- tryCatch(t.test(valores ~ cirugia), error = function(e) NULL)
+  if (!is.null(t_test)) {
+    data.frame(
+      metabolito = met,
+      p_valor = t_test$p.value
+    )
+  }
+})
+resultados_df <- do.call(rbind, resultados)
+head(resultados_df[order(resultados_df$p_valor), ], 10)
+
+```
+
+Las variables clínicas clave —peso, IMC, perímetro de cintura (CINT), y circunferencia abdominal (CAD)— mostraron una disminución progresiva y sostenida a lo largo del tiempo en ambos grupos y tipos de cirugía. Las curvas de tendencia fueron similares entre técnicas, sugiriendo una eficacia comparable en términos de pérdida ponderal y reducción de medidas antropométricas. **(Figuras 4 y 5)**
+
+
+```{r echo=FALSE, warning= FALSE, fig.cap = "Figura 4. Evolución temporal de medidas antropométricas en función del grupo"}
+#Tendencias de las  medidas fundamentales de salud metabólica en función del grupo
+plot_mean_se_se <- function(var_base) {
+  tiempos <- c("T0", "T2", "T4", "T5")
+  filas_var <- paste0(var_base, "_", tiempos)
+  
+  # Verificar que existen en el objeto
+  filas_existentes <- filas_var[filas_var %in% rownames(se)]
+  if (length(filas_existentes) < 2) {
+    message("No hay suficientes tiempos para: ", var_base)
+    return(NULL)
+  }
+  
+  # Extraer datos y reorganizar
+  datos <- t(assay(se)[filas_existentes, ])
+  colnames(datos) <- gsub(paste0(var_base, "_"), "", filas_existentes)
+  df <- cbind(as.data.frame(colData(se)), datos)
+  
+  # Pasar a formato largo
+  df_long <- melt(df, id.vars = c("SUBJECTS", "Group", "SURGERY", "GENDER"),
+                  variable.name = "Tiempo", value.name = var_base)
+      # Limpiar valores no válidos en la columna Tiempo
+  df_long <- df_long[df_long$Tiempo %in% tiempos, ]
+  df_long$Tiempo <- factor(df_long$Tiempo, levels = tiempos)
+  df_long$Group <- as.factor(df_long$Group)
+  
+  # Calcular medias y error estándar
+  stat_df <- df_long %>%
+    group_by(Tiempo, Group) %>%
+    summarise(
+      media = mean(.data[[var_base]], na.rm = TRUE),
+      se = sd(.data[[var_base]], na.rm = TRUE)/sqrt(n())
+    )
+  
+  # Graficar
+  ggplot(stat_df, aes(x = Tiempo, y = media, group = Group, color = Group)) +
+    geom_line(size = 1.2) +
+    geom_point(size = 2) +
+    geom_errorbar(aes(ymin = media - se, ymax = media + se), width = 0.2) +
+    labs(title = paste("Evolución de", var_base, "por grupo"),
+         y = var_base, x = "Tiempo") +
+    theme_minimal() +
+    theme(plot.title = element_text(size = 10))
+}
+
+p1 <- plot_mean_se_se("PESO")
+p2 <- plot_mean_se_se("bmi")
+p3 <- plot_mean_se_se("CINT")
+p4 <- plot_mean_se_se("CAD")
+
+
+# Mostrar en 2x2
+ggarrange(p1, p2, p3, p4,
+          ncol = 2, nrow = 2,
+          labels = c("A", "B", "C", "D"))
+
+```
+
+```{r echo=FALSE, warning= FALSE, fig.cap = "Figura 5. Evolución temporal de medidas antropométricas en función de la técnica quirúrgica"}
+#Tendencias de las  medidas fundamentales de salud metabólica en función de la cirugía
+plot_mean_se_se_by_surgery <- function(var_base) {
+  tiempos <- c("T0", "T2", "T4", "T5")
+  filas_var <- paste0(var_base, "_", tiempos)
+  
+  # Verificar que existen
+  filas_existentes <- filas_var[filas_var %in% rownames(se)]
+  if (length(filas_existentes) < 2) {
+    message("No hay suficientes tiempos para: ", var_base)
+    return(NULL)
+  }
+  
+  # Extraer datos
+  datos <- t(assay(se)[filas_existentes, ])
+  colnames(datos) <- gsub(paste0(var_base, "_"), "", filas_existentes)
+  df <- cbind(as.data.frame(colData(se)), datos)
+  
+  # Pasar a formato largo
+  df_long <- melt(df, id.vars = c("SUBJECTS", "Group", "SURGERY", "GENDER"),
+                  variable.name = "Tiempo", value.name = var_base)
+  # Limpiar valores no válidos en la columna Tiempo
+  df_long <- df_long[df_long$Tiempo %in% tiempos, ]
+  df_long$Tiempo <- factor(df_long$Tiempo, levels = tiempos)
+  df_long$SURGERY <- as.factor(df_long$SURGERY)
+  
+  # Calcular medias y error estándar por cirugía
+  stat_df <- df_long %>%
+    group_by(Tiempo, SURGERY) %>%
+    summarise(
+      media = mean(.data[[var_base]], na.rm = TRUE),
+      se = sd(.data[[var_base]], na.rm = TRUE)/sqrt(n())
+    )
+  
+  # Graficar
+  ggplot(stat_df, aes(x = Tiempo, y = media, group = SURGERY, color = SURGERY)) +
+    geom_line(size = 1.2) +
+    geom_point(size = 2) +
+    geom_errorbar(aes(ymin = media - se, ymax = media + se), width = 0.2) +
+    labs(title = paste("Evolución de", var_base, "por tipo de cirugía"),
+         y = var_base, x = "Tiempo", color = "Cirugía") +
+    theme_minimal() +
+    theme(plot.title = element_text(size = 10))
+}
+p5 <- plot_mean_se_se_by_surgery("PESO")
+p6 <- plot_mean_se_se_by_surgery("bmi")
+p7 <- plot_mean_se_se_by_surgery("CINT")
+p8 <- plot_mean_se_se_by_surgery("CAD")
+
+# Mostrar en 2x2
+ggarrange(p5, p6, p7, p8,
+          ncol = 2, nrow = 2,
+          labels = c("A", "B", "C", "D"))
+
+```
+
+HBA1C mejoró de forma consistente tras la intervención. 
+
+En cuanto al colesterol HDL, se observó una tendencia general al alza, especialmente tras el bypass gástrico. Por el contrario, el LDL mostró una evolución divergente según el tipo de cirugía: **(Figura 6)**
+
+
+```{r include=FALSE}
+#Tendencias de los metabolitos fundamentales de salud metabólica en función del grupo
+plot_mean_se_se <- function(var_base) {
+  tiempos <- c("T0", "T2", "T4", "T5")
+  filas_var <- paste0(var_base, "_", tiempos)
+  
+  # Verificar que existen en el objeto
+  filas_existentes <- filas_var[filas_var %in% rownames(se)]
+  if (length(filas_existentes) < 2) {
+    message("No hay suficientes tiempos para: ", var_base)
+    return(NULL)
+  }
+  
+  # Extraer datos y reorganizar
+  datos <- t(assay(se)[filas_existentes, ])
+  colnames(datos) <- gsub(paste0(var_base, "_"), "", filas_existentes)
+  df <- cbind(as.data.frame(colData(se)), datos)
+  
+  # Pasar a formato largo
+  df_long <- melt(df, id.vars = c("SUBJECTS", "Group", "SURGERY", "GENDER"),
+                  variable.name = "Tiempo", value.name = var_base)
+      # Limpiar valores no válidos en la columna Tiempo
+  df_long <- df_long[df_long$Tiempo %in% tiempos, ]
+  df_long$Tiempo <- factor(df_long$Tiempo, levels = tiempos)
+  df_long$Group <- as.factor(df_long$Group)
+  
+  # Calcular medias y error estándar
+  stat_df <- df_long %>%
+    group_by(Tiempo, Group) %>%
+    summarise(
+      media = mean(.data[[var_base]], na.rm = TRUE),
+      se = sd(.data[[var_base]], na.rm = TRUE)/sqrt(n())
+    )
+  
+  # Graficar
+  ggplot(stat_df, aes(x = Tiempo, y = media, group = Group, color = Group)) +
+    geom_line(size = 1.2) +
+    geom_point(size = 2) +
+    geom_errorbar(aes(ymin = media - se, ymax = media + se), width = 0.2) +
+    labs(title = paste("Evolución de", var_base, "por grupo"),
+         y = var_base, x = "Tiempo") +
+    theme_minimal() +
+    theme(plot.title = element_text(size = 10))
+}
+
+
+p9 <- plot_mean_se_se("HBA1C")
+p10 <- plot_mean_se_se("LDL")
+p11 <- plot_mean_se_se("HDL")
+
+
+# Mostrar en grilla
+ggarrange(
+  p9, p11,             
+  p10,                 
+  ncol = 2, nrow = 2, 
+  layout_matrix = rbind(c(1, 2), c(3, 3)), 
+  labels = c("A", "B", "C")
+)
+```
+
+```{r echo=FALSE, warning= FALSE, fig.cap = "Figura 6. Evolución temporal de metabolitos clave en función de la técnica quirúrgica"}
+#Tendencias de los metabolitos  fundamentales de salud metabólica en función del tipo de cirugía
+plot_mean_se_se_by_surgery <- function(var_base) {
+  tiempos <- c("T0", "T2", "T4", "T5")
+  filas_var <- paste0(var_base, "_", tiempos)
+  
+  # Verificar que existen
+  filas_existentes <- filas_var[filas_var %in% rownames(se)]
+  if (length(filas_existentes) < 2) {
+    message("No hay suficientes tiempos para: ", var_base)
+    return(NULL)
+  }
+  
+  # Extraer datos
+  datos <- t(assay(se)[filas_existentes, ])
+  colnames(datos) <- gsub(paste0(var_base, "_"), "", filas_existentes)
+  df <- cbind(as.data.frame(colData(se)), datos)
+  
+  # Pasar a formato largo
+  df_long <- melt(df, id.vars = c("SUBJECTS", "Group", "SURGERY", "GENDER"),
+                  variable.name = "Tiempo", value.name = var_base)
+  # Limpiar valores no válidos en la columna Tiempo
+  df_long <- df_long[df_long$Tiempo %in% tiempos, ]
+  df_long$Tiempo <- factor(df_long$Tiempo, levels = tiempos)
+  df_long$SURGERY <- as.factor(df_long$SURGERY)
+  
+  # Calcular medias y error estándar por cirugía
+  stat_df <- df_long %>%
+    group_by(Tiempo, SURGERY) %>%
+    summarise(
+      media = mean(.data[[var_base]], na.rm = TRUE),
+      se = sd(.data[[var_base]], na.rm = TRUE)/sqrt(n())
+    )
+  
+  # Graficar
+  ggplot(stat_df, aes(x = Tiempo, y = media, group = SURGERY, color = SURGERY)) +
+    geom_line(size = 1.2) +
+    geom_point(size = 2) +
+    geom_errorbar(aes(ymin = media - se, ymax = media + se), width = 0.2) +
+    labs(title = paste("Evolución de", var_base, "por tipo de cirugía"),
+         y = var_base, x = "Tiempo", color = "Cirugía") +
+    theme_minimal() +
+    theme(plot.title = element_text(size = 10))
+}
+
+
+p12 <- plot_mean_se_se_by_surgery("HBA1C")
+p13 <- plot_mean_se_se_by_surgery("LDL")
+p14 <- plot_mean_se_se_by_surgery("HDL")
+
+# Mostrar en grilla
+ggarrange(
+  p12, p14,             # Primera fila: dos gráficos
+  p13,                 # Segunda fila: uno solo
+  ncol = 2, nrow = 2, 
+  layout_matrix = rbind(c(1, 2), c(3, 3)), 
+  labels = c("A", "B", "C")
+)
+```
+
+```{r include=FALSE}
+library(dplyr)
+
+# Extraer valores LDL_T0 y LDL_T5
+ldl_df <- data.frame(
+  LDL_T0 = assay(se)["LDL_T0", ],
+  LDL_T5 = assay(se)["LDL_T5", ],
+  SURGERY = colData(se)$SURGERY
+)
+
+ldl_df %>%
+  group_by(SURGERY) %>%
+  summarise(
+    media_T0 = mean(LDL_T0, na.rm = TRUE),
+    media_T5 = mean(LDL_T5, na.rm = TRUE),
+    diferencia = media_T5 - media_T0
+  )
+
+```
+
+
+```{r include = FALSE}
+# ANOVA para LDL
+df_ldl <- data.frame(
+  LDL = c(assay(se)[paste0("LDL_T0"), ],
+          assay(se)[paste0("LDL_T5"), ]),
+  Tiempo = rep(c("T0", "T5"), each = ncol(se)),
+  Cirugía = rep(colData(se)$SURGERY, 2)
+)
+anova_result <- aov(LDL ~ Tiempo * Cirugía, data = df_ldl)
+summary(anova_result)
+```
+
+•	Bypass gástrico: disminución media de 34 mg/dL entre T0 y T5.
+
+•	Gastrectomía tubular: aumento medio de 2 mg/dL en el mismo periodo.
+
+Aunque el t-test de comparación de cambios en LDL entre técnicas no alcanzó significación estadística (p = 0.083), sí mostró una tendencia relevante desde el punto de vista clínico. Esta observación fue respaldada por un análisis de varianza (ANOVA) que reveló una interacción significativa entre el tiempo y el tipo de cirugía (p = 0.047), lo que sugiere trayectorias de evolución distintas del LDL según la técnica empleada.
+
+Las correlaciones entre pérdida de peso y LDL, HDL y HBA1C no fueron significativas (p > 0.05), aunque se observó una tendencia negativa para HDL.
+
+```{r include = FALSE}
+peso <- assay(se)[c("PESO_T0", "PESO_T5"), ]
+pérdida_peso <- peso["PESO_T0", ] - peso["PESO_T5", ]
+colData(se)$perdida_peso <- pérdida_peso
+
+datos <- as.data.frame(colData(se))
+cor.test(datos$perdida_peso, assay(se)["LDL_T5", ])
+cor.test(datos$perdida_peso, assay(se)["HDL_T5", ])
+cor.test(datos$perdida_peso, assay(se)["HBA1C_T5", ])
+```
+
+# DISCUSIÓN
+
+Este análisis exploratorio revela que la cirugía bariátrica tiene un impacto positivo en variables asociadas al síndrome metabólico, incluyendo peso, IMC, circunferencia abdominal y HBA1C. 
+
+Los resultados también sugieren que el tipo de técnica quirúrgica podría influir en la evolución de algunos parámetros bioquímicos, especialmente el colesterol LDL. En los pacientes sometidos a bypass gástrico se observó una disminución considerable de LDL, mientras que en aquellos con gastrectomía tubular hubo una ligera elevación. Aunque la diferencia final entre grupos no alcanzó significación estadística mediante t-test, el análisis de varianza sí reveló una interacción significativa entre el tipo de cirugía y la evolución temporal del LDL, lo que sugiere que la trayectoria de cambio difiere según la técnica empleada. Este descenso de LDL podría suponer una disminución añadida al riesgo cardiovascular más allá del efecto de la propia pérdida de peso
+
+La ausencia de diferencias iniciales entre grupos sugiere que los efectos observados son atribuibles a la intervención y no a condiciones basales distintas.
+
+Entre las limitaciones del estudio se encuentra el tamaño muestral reducido, especialmente en el grupo tubular, lo cual puede limitar la potencia estadística. Además, algunos metabolitos no estaban disponibles en todos los tiempos, dificultando análisis completos.
+
+Se recomienda ampliar la muestra y realizar un seguimiento más prolongado para confirmar los resultados observados.
+
+# CONCLUSIONES
+
+La cirugía bariátrica se asoció a una mejora en parámetros clave de salud metabólica, incluyendo peso, IMC, circunferencia abdominal y hemoglobina glicada.
+
+No se encontraron diferencias claras en los perfiles metabolómicos basales entre los grupos quirúrgicos, lo que respalda la validez comparativa del estudio.
+
+Aunque no se alcanzó significación estadística en el análisis final de LDL mediante t-test, el análisis de varianza mostró que su evolución a lo largo del tiempo difiere según la técnica quirúrgica, apuntando a un posible mayor beneficio del bypass gástrico sobre el perfil lipídico.
+
+No se identificaron correlaciones significativas entre la pérdida de peso y los niveles finales de LDL, HDL o HBA1C, lo que sugiere que otros factores podrían mediar los efectos metabólicos de la cirugía.
+
+# REFERENCIAS 
+
+1. Origen de los datos: https://github.com/nutrimetabolomics/metaboData 
+2. Enlade a github con el resto de documentos: https://github.com/evaat52/Alvarez-Torres-Eva-PEC1
+
+
+# ANEXO 
+
+## Otros gráficos de interés: 
+
+
+```{r echo= FALSE, fig.cap = "Figura 7. Histograma de edad"}
+# Histograma de edad
+ggplot(meta, aes(x = as.numeric(AGE))) +
+  geom_histogram(binwidth = 5, fill = "skyblue", color = "white") +
+  labs(title = "Distribución de edades", x = "Edad", y = "Frecuencia") +
+  theme_minimal()
+```
+
+```{r echo= FALSE, fig.cap = "Figura 8. Distribución de edad por sexo"}
+#Distribución de edad por sexo
+ggplot(meta, aes(x = GENDER, y = AGE, fill = GENDER)) +
+  geom_boxplot() + theme_minimal()
+```
+
+
+```{r echo= FALSE, warning= FALSE, fig.cap = "Figura 9. Metabolitos en T0 y T5 comparativos por cirugía"}
+# Función para generar boxplots comparativos por cirugía
+boxplot_cirugia <- function(var_base, tiempo) {
+  var <- paste0(var_base, "_", tiempo)
+  df <- data.frame(
+    valor = assay(se)[var, ],
+    SURGERY = colData(se)$SURGERY
+  )
+  
+  ggplot(df, aes(x = SURGERY, y = valor, fill = SURGERY)) +
+    geom_boxplot() +
+    labs(title = paste("Boxplot de", var_base, "en", tiempo),y = var_base, x = "Cirugía") +
+    theme_minimal() +
+    theme(plot.title = element_text(size = 10))
+}
+
+p1 <- boxplot_cirugia("LDL", "T0")
+p2 <- boxplot_cirugia("LDL", "T5")
+p3 <- boxplot_cirugia("HDL", "T0")
+p4 <- boxplot_cirugia("HDL", "T5")
+p5 <- boxplot_cirugia("HBA1C", "T0")
+p6 <- boxplot_cirugia("HBA1C", "T5")
+
+# Mostrar en 3x3
+ggarrange(p1, p2, p3, p4, p5, p6,
+          ncol = 2, nrow = 3)
+```
+
+## Preguntas 1, 2 y 4 de la PEC
+
+### Pregunta 1: descargar el dataset
+
+```{r}
+library(httr) # Para descargar los archivos
+library(readr)  # Para leer archivos CSV
+library(tidyverse) # Para manipulación de datos
+library(S4Vectors) #Para funcion DataFrame
+options(repos = c(CRAN = "https://cloud.r-project.org"))
+install.packages("BiocManager")
+# Instalar el paquete SummarizedExperiment
+BiocManager::install("SummarizedExperiment")
+library(SummarizedExperiment)
+```
+
+
+```{r}
+# URL del archivo CSV en GitHub en versión raw
+file_url <- "https://raw.githubusercontent.com/nutrimetabolomics/metaboData/refs/heads/main/Datasets/2018-MetabotypingPaper/DataValues_S013.csv"
+
+# Descargar el archivo CSV
+download.file(file_url, destfile = "metabolomics_dataset.csv", mode = "wb")
+
+# Leer el archivo CSV en R
+metabolomics_data <- read.csv("metabolomics_dataset.csv")
+
+# Para verificar la estructura del dataset usamos: str(metabolomics_data)
+
+# Para ver las primeras filas del dataset usamos: head(metabolomics_data)
+
+dim(metabolomics_data)  # Verifica el número de filas y columnas
+
+```
+
+
+### Pregunta 2: Crear SummarizedExperiment object
+
+```{r}
+# Extraer la información de los pacientes
+colData <- metabolomics_data[, 1:6]  # Variables cualitativas
+colData <- DataFrame(colData)  # Convertir a DataFrame de Bioconductor
+dim(colData)  
+head(colData)
+
+```
+
+```{r}
+# Extraer la matriz de datos (variables cuantitativas)
+assay_data <- as.matrix(metabolomics_data[, 7:ncol(metabolomics_data)])
+dim(assay_data)  
+head(assay_data[, 1:5])  # Para ver los primeros valores
+
+```
+
+
+```{r}
+# Transponer la matriz de datos para que las muestras estén en filas
+assay_data <- t(assay_data)
+
+# Verificar dimensiones después de la transposición
+dim(assay_data)  
+
+#  SummarizedExperiment
+se <- SummarizedExperiment(
+  assays = list(counts = assay_data),
+  colData = colData
+)
+se
+```
+
+
+### Pregunta 4: guardar el SummarizedExperiment Object
+
+```{r}
+dir.create("data", showWarnings = FALSE)
+save(se, file = "data/SummarizedExperiment.Rda")
+```
+
+
