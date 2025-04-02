@@ -24,13 +24,13 @@ library(ggpubr)
 
 ```{r include = FALSE}
 # Cargar objeto
-load("data/SummarizedExperiment.Rda")
+load("SummarizedExperiment.Rda")
 ```
 
 
 # RESUMEN
 
-Se analizaron datos de 39 pacientes sometidos a cirugía bariátrica (bypass gástrico o gastrectomía tubular) con el objetivo de evaluar la evolución de variables fisiológicas y metabolómicas a lo largo del tiempo. Se construyó un objeto SummarizedExperiment para organizar los datos y se realizó un análisis exploratorio mediante gráficos de tendencias, análisis de componentes principales, heatmaps y pruebas estadísticas.
+Se analizaron datos de 39 pacientes sometidos a cirugía bariátrica (bypass gástrico o gastrectomía tubular) con el objetivo de evaluar la evolución de variables fisiológicas y metabolómicas a lo largo del tiempo. Se construyó un objeto SummarizedExperiment para organizar los datos y se realizó un análisis exploratorio mediante gráficos de tendencias, análisis de componentes principales, mapa de calor (heatmap) y pruebas estadísticas.
 
 Se observó una disminución sostenida del peso, del índice de masa corporal (IMC) y de las medidas antropométricas, junto con una mejoría en la hemoglobina glicada (HBA1C). El análisis de varianza (ANOVA) reveló una interacción significativa entre el tiempo y el tipo de cirugía en la evolución del colesterol LDL, lo que sugiere que su trayectoria depende de la técnica quirúrgica empleada. En conjunto, los resultados indican un beneficio metabólico global de la cirugía bariátrica, con un perfil lipídico más favorable tras el bypass gástrico.
 
@@ -45,7 +45,7 @@ Se analizaron los datos de 39 pacientes obesos sometidos a cirugía bariátrica 
 
   3.	Explorar la posible correlación entre la pérdida de peso y la evolución de metabolitos clave como LDL, HDL y hemoglobina         glicada.
 
-Se decidió focalizar el análisis estos tres metabolitos debido a su relevancia clínica en el contexto del síndrome metabólico, el riesgo cardiovascular y el control glucémico. Estos indicadores son de uso habitual en la evaluación de pacientes sometidos a cirugía bariátrica, y su evolución puede aportar información directa sobre la eficacia del tratamiento.
+Se decidió focalizar el análisis en estos tres metabolitos debido a su relevancia clínica en el contexto del síndrome metabólico, el riesgo cardiovascular y el control glucémico. Estos indicadores son de uso habitual en la evaluación de pacientes sometidos a cirugía bariátrica, y su evolución puede aportar información directa sobre la eficacia del tratamiento.
 
 # MÉTODOS
 
@@ -65,7 +65,7 @@ Se llevó a cabo un análisis exploratorio estructurado en:
   1.	Descripción de los metadatos (tablas de frecuencia, histogramas, boxplots).
   2.	Exploración homogeneidad de grupos de tratamiento
       a.	Análisis de Componentes Principales (PCA) para explorar la homogeneidad de los grupos en T0. 
-      b.	Selección de los 30 metabolitos con mayor variabilidad y representación de heatmap para evaluar posibles clusters. 
+      b.	Selección de los 30 metabolitos con mayor variabilidad y representación de mapa de calor (heatmap) para evaluar posibles clusters. 
       c.	Identificación de los 10 metabolitos con mayor diferencia entre cirugías en T0.
   3.	Gráficos de evolución temporal para variables clave como PESO, IMC, CINTURA, CAD, HBA1C, LDL y HDL, estratificados por grupo y   tipo de cirugía.
   4.	Análisis de correlación entre pérdida de peso y metabolitos en T5.
@@ -105,7 +105,7 @@ ggplot(meta, aes(x = SURGERY, y = AGE, fill = SURGERY)) +
   geom_boxplot() + theme_minimal()
 ```
 
-El análisis de componentes principales (PCA) a tiempo 0  (T0) no mostró una separación clara entre los grupos ni entre tipos de cirugía, lo que sugiere una adecuada homogeneidad basal entre las cohortes. Esta observación se refuerza con el heatmap generado a partir de los 30 metabolitos con mayor variabilidad, el cual evidenció patrones de expresión heterogéneos pero sin agrupamientos sistemáticos atribuibles a la técnica quirúrgica o al grupo. **(Imágenes 2 y 3)**
+El análisis de componentes principales (PCA) a tiempo 0  (T0) no mostró una separación clara entre los grupos ni entre tipos de cirugía, lo que sugiere una adecuada homogeneidad basal entre las cohortes. Esta observación se refuerza con el mapa de calor generado a partir de los 30 metabolitos con mayor variabilidad, el cual evidenció patrones de expresión heterogéneos pero sin agrupamientos sistemáticos atribuibles a la técnica quirúrgica o al grupo. **(Imágenes 2 y 3)**
 
 ```{r PCA-T0,  echo=FALSE, fig.cap="Figura 2. PCA sobre metabolitos a tiempo 0 (T_0)"}
 #Análisis de componentes principales en T0
@@ -145,14 +145,14 @@ matriz_top30 <- matriz[top30, ]
 matriz_top30 <- matriz_top30[apply(matriz_top30, 1, function(x) all(!is.na(x))), ]
 matriz_escalada <- t(scale(t(matriz_top30)))
 
-# 2. Heatmap 
+# 2. Mapa de calor (heatmap) 
 pheatmap(matriz_escalada,
          show_rownames = TRUE,
-         main = "Heatmap: Top 30 metabolitos más variables",
+         main = "Mapa de calor (Heatmap): Top 30 metabolitos más variables",
          fontsize_row = 6)
 
 ```
-Aunque el análisis global mediante PCA y heatmap no mostró una separación clara entre los grupos quirúrgicos en el momento basal (T0), las pruebas t realizadas individualmente para cada metabolito identificaron diferencias estadísticamente significativas en algunos casos concretos, como C14.1, Ala, HOMA y varios lysoPC. Esto sugiere una cierta heterogeneidad metabólica de base en variables específicas.
+Aunque el análisis global mediante PCA y mapa de calor (heatmap) no mostró una separación clara entre los grupos quirúrgicos en el momento basal (T0), las pruebas t realizadas individualmente para cada metabolito identificaron diferencias estadísticamente significativas en algunos casos concretos, como C14.1, Ala, HOMA y varios lysoPC. Esto sugiere una cierta heterogeneidad metabólica de base en variables específicas.
 
 No obstante, al no observarse agrupamientos sistemáticos ni patrones de clustering claros, puede considerarse que los grupos son globalmente homogéneos al inicio del estudio.
 
@@ -474,7 +474,7 @@ cor.test(datos$perdida_peso, assay(se)["HBA1C_T5", ])
 
 Este análisis exploratorio revela que la cirugía bariátrica tiene un impacto positivo en variables asociadas al síndrome metabólico, incluyendo peso, IMC, circunferencia abdominal y HBA1C. 
 
-Los resultados también sugieren que el tipo de técnica quirúrgica podría influir en la evolución de algunos parámetros bioquímicos, especialmente el colesterol LDL. En los pacientes sometidos a bypass gástrico se observó una disminución considerable de LDL, mientras que en aquellos con gastrectomía tubular hubo una ligera elevación. Aunque la diferencia final entre grupos no alcanzó significación estadística mediante t-test, el análisis de varianza sí reveló una interacción significativa entre el tipo de cirugía y la evolución temporal del LDL, lo que sugiere que la trayectoria de cambio difiere según la técnica empleada. Este descenso de LDL podría suponer una disminución añadida al riesgo cardiovascular más allá del efecto de la propia pérdida de peso
+Los resultados también sugieren que el tipo de técnica quirúrgica podría influir en la evolución de algunos parámetros bioquímicos, especialmente el colesterol LDL. En los pacientes sometidos a bypass gástrico se observó una disminución considerable de LDL, mientras que en aquellos con gastrectomía tubular hubo una ligera elevación. Aunque la diferencia final entre grupos no alcanzó significación estadística mediante t-test, el análisis de varianza sí reveló una interacción significativa entre el tipo de cirugía y la evolución temporal del LDL, lo que sugiere que la trayectoria de cambio difiere según la técnica empleada. Este descenso de LDL podría suponer una disminución añadida al riesgo cardiovascular más allá del efecto de la propia pérdida de peso.
 
 La ausencia de diferencias iniciales sugiere que los efectos observados son atribuibles a la intervención y no a condiciones basales distintas.
 
@@ -624,7 +624,7 @@ Su principal diferencia con ExpressionSet es que este último es más antiguo y 
 
 ```{r}
 dir.create("data", showWarnings = FALSE)
-save(se, file = "data/SummarizedExperiment.Rda")
+save(se, file = "SummarizedExperiment.Rda")
 ```
 
 
