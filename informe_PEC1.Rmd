@@ -30,7 +30,7 @@ load("data/SummarizedExperiment.Rda")
 
 # RESUMEN
 
-Se analizaron datos de 39 pacientes sometidos a cirugía bariátrica (bypass gástrico o gastrectomía tubular) con el objetivo de evaluar la evolución de variables fisiológicas y metabolómicas a lo largo del tiempo. Se construyó un objeto SummarizedExperiment para organizar los datos y se realizó un análisis exploratorio mediante gráficos de tendencias, PCA, heatmaps y pruebas estadísticas.
+Se analizaron datos de 39 pacientes sometidos a cirugía bariátrica (bypass gástrico o gastrectomía tubular) con el objetivo de evaluar la evolución de variables fisiológicas y metabolómicas a lo largo del tiempo. Se construyó un objeto SummarizedExperiment para organizar los datos y se realizó un análisis exploratorio mediante gráficos de tendencias, análisis de componentes principales, heatmaps y pruebas estadísticas.
 
 Se observó una disminución sostenida del peso, del índice de masa corporal (IMC) y de las medidas antropométricas, junto con una mejoría en la hemoglobina glicada (HBA1C). El análisis de varianza (ANOVA) reveló una interacción significativa entre el tiempo y el tipo de cirugía en la evolución del colesterol LDL, lo que sugiere que su trayectoria depende de la técnica quirúrgica empleada. En conjunto, los resultados indican un beneficio metabólico global de la cirugía bariátrica, con un perfil lipídico más favorable tras el bypass gástrico.
 
@@ -51,7 +51,7 @@ Se decidió focalizar el análisis estos tres metabolitos debido a su relevancia
 
 Se utilizó un dataset importado desde el repositorio recomendado en el enunciado en formato .cvs analizado en RStudio mediante un documento RMarkdown. Inicialmente, el desarrollo se realizó de forma local, y posteriormente se generó un script en R con control de versiones mediante Git. Se creó un repositorio GitHub donde incluir el proyecto completo y cuyo enlace está disponible en el *apartado 7: Referencias*. 
 
-El dataset incluía 39 pacientes y 690 variables, de las cuales 6 correspondían a metadatos (edad, sexo, grupo, tipo de cirugía) y las restantes a medidas fisiológicas y metabolómicas repetidas en cuatro tiempos: T0 (antes de la cirugía), T2, T4 y T5. 
+El dataset incluía 39 pacientes y 690 variables, de las cuales 6 correspondían a metadatos (edad, sexo, grupo (según fenotipo saludable o no), tipo de cirugía) y las restantes a medidas fisiológicas y metabolómicas repetidas en cuatro tiempos: T0 (antes de la cirugía), T2, T4 y T5. 
 
 Se creó un objeto SummarizedExperiment, que permite almacenar de forma estructurada los datos cuantitativos (assay) y metadatos (colData). Este objeto se utiliza habitualmente en bioinformática por su versatilidad y estructura clara.
 
@@ -59,9 +59,7 @@ Se creó un objeto SummarizedExperiment, que permite almacenar de forma estructu
 # Ver estructura del SummarizedExperiment Object
 str(se)
 ```
-SummarizedExperiment funciona como un contenedor de matrices, donde las filas representan los metabolitos de interés y las columnas las observaciones. Un objeto de esta clase puede contener uno o más assays, cada uno con múltiples matrices de datos, permitiendo almacenar diferentes tipos de mediciones.
 
-Su principal diferencia con ExpressionSet es que este último es más antiguo y menos flexible, pensado específicamente para transcriptómica. ExpressionSet solo admite una única matriz de expresión, mientras que SummarizedExperiment permite trabajar con múltiples matrices y maneja de forma más estructurada los metadatos de filas (rowData) y columnas (colData).
 
 Se llevó a cabo un análisis exploratorio estructurado en:
   1.	Descripción de los metadatos (tablas de frecuencia, histogramas, boxplots).
@@ -79,7 +77,7 @@ Se llevó a cabo un análisis exploratorio estructurado en:
  
 # RESULTADOS
 
-La muestra incluyó 39 pacientes, 27 mujeres y 12 hombres, distribuidos en 24 pacientes en el grupo 1 y 15 en el grupo 2. En cuanto al tipo de cirugía, 26 fueron sometidos a bypass gástrico y 13 a gastrectomía tubular. La distribución por edad fue homogénea entre grupos quirúrgicos **(figura 1)**
+La muestra incluyó 39 pacientes, 27 mujeres y 12 hombres, distribuidos en 24 pacientes en el grupo 1 (saludables metabólicamente) y 15 en el grupo 2 (no saludables metabóllicamente). En cuanto al tipo de cirugía, 26 fueron sometidos a bypass gástrico y 13 a gastrectomía tubular. La distribución por edad fue homogénea entre grupos quirúrgicos **(figura 1)**
 
 ```{r include = FALSE}
 # Extraer metadatos
@@ -296,7 +294,7 @@ ggarrange(p5, p6, p7, p8,
 
 HBA1C mejoró de forma consistente tras la intervención. 
 
-En cuanto al colesterol HDL, se observó una tendencia general al alza, especialmente tras el bypass gástrico. Por el contrario, el LDL mostró una evolución divergente según el tipo de cirugía: **(Figura 6)**
+En cuanto al colesterol HDL, se observó una tendencia general al alza, especialmente tras el bypass gástrico. Por el contrario, el LDL mostró una evolución divergente según el tipo de cirugía: *(Figura 6)*
 
 
 ```{r include=FALSE}
@@ -478,11 +476,10 @@ Este análisis exploratorio revela que la cirugía bariátrica tiene un impacto 
 
 Los resultados también sugieren que el tipo de técnica quirúrgica podría influir en la evolución de algunos parámetros bioquímicos, especialmente el colesterol LDL. En los pacientes sometidos a bypass gástrico se observó una disminución considerable de LDL, mientras que en aquellos con gastrectomía tubular hubo una ligera elevación. Aunque la diferencia final entre grupos no alcanzó significación estadística mediante t-test, el análisis de varianza sí reveló una interacción significativa entre el tipo de cirugía y la evolución temporal del LDL, lo que sugiere que la trayectoria de cambio difiere según la técnica empleada. Este descenso de LDL podría suponer una disminución añadida al riesgo cardiovascular más allá del efecto de la propia pérdida de peso
 
-La ausencia de diferencias iniciales entre grupos sugiere que los efectos observados son atribuibles a la intervención y no a condiciones basales distintas.
+La ausencia de diferencias iniciales sugiere que los efectos observados son atribuibles a la intervención y no a condiciones basales distintas.
 
 Entre las limitaciones del estudio se encuentra el tamaño muestral reducido, especialmente en el grupo tubular, lo cual puede limitar la potencia estadística. Además, algunos metabolitos no estaban disponibles en todos los tiempos, dificultando análisis completos.
 
-Se recomienda ampliar la muestra y realizar un seguimiento más prolongado para confirmar los resultados observados.
 
 # CONCLUSIONES
 
@@ -584,7 +581,7 @@ dim(metabolomics_data)  # Verifica el número de filas y columnas
 ```
 
 
-### Pregunta 2: Crear SummarizedExperiment object
+### Pregunta 2: Crear SummarizedExperiment object y concepto
 
 ```{r}
 # Extraer la información de los pacientes
@@ -619,6 +616,9 @@ se <- SummarizedExperiment(
 se
 ```
 
+SummarizedExperiment funciona como un contenedor de matrices, donde las filas representan los metabolitos de interés y las columnas las observaciones. Un objeto de esta clase puede contener uno o más assays, cada uno con múltiples matrices de datos, permitiendo almacenar diferentes tipos de mediciones.
+
+Su principal diferencia con ExpressionSet es que este último es más antiguo y menos flexible, pensado específicamente para transcriptómica. ExpressionSet solo admite una única matriz de expresión, mientras que SummarizedExperiment permite trabajar con múltiples matrices y maneja de forma más estructurada los metadatos de filas (rowData) y columnas (colData).
 
 ### Pregunta 4: guardar el SummarizedExperiment Object
 
