@@ -66,6 +66,9 @@ str(colData(se))
 # Ver la estructura de colData directamente
 colData(se)
 
+# Guardar el objeto 
+save(se, file = "SummarizedExperiment.Rda")
+
 # 4. Análisis de los metadatos
 
 # Extraer metadatos
