@@ -49,7 +49,7 @@ Se decidió focalizar el análisis estos tres metabolitos debido a su relevancia
 
 # MÉTODOS
 
-Se utilizó un dataset importado desde el repositorio recomendado en el enunciado en formato .cvs analizado en RStudio mediante un documento RMarkdown. Inicialmente, el desarrollo se realizó de forma local, y posteriormente se generó un script en R con control de versiones mediante Git. Se creó un repositorio GitHub donde incluir el proyecto completo y cuyo enlace está disponible en el *apartado 7: Referencias*.
+Se utilizó un dataset importado desde el repositorio recomendado en el enunciado en formato .cvs analizado en RStudio mediante un documento RMarkdown. Inicialmente, el desarrollo se realizó de forma local, y posteriormente se generó un script en R con control de versiones mediante Git. Se creó un repositorio GitHub donde incluir el proyecto completo y cuyo enlace está disponible en el *apartado 7: Referencias*. 
 
 El dataset incluía 39 pacientes y 690 variables, de las cuales 6 correspondían a metadatos (edad, sexo, grupo, tipo de cirugía) y las restantes a medidas fisiológicas y metabolómicas repetidas en cuatro tiempos: T0 (antes de la cirugía), T2, T4 y T5. 
 
@@ -74,6 +74,8 @@ Se llevó a cabo un análisis exploratorio estructurado en:
   5.	Comparación de cambios en LDL entre técnicas quirúrgicas mediante t-test y análisis de la varianza.
 
  Se utilizaron las siguientes herramientas: tidyverse, reshape2, ggplot2, stats, SummarizedExperiment, Bioconductor.
+ 
+ En el repositorio se podrá consultar el script en R, el informe en formato RMarkdown y pdf, el objeto de clase, los datos así como un resumen de los metadatos y los metadatos en formato markdown.
  
 # RESULTADOS
 
