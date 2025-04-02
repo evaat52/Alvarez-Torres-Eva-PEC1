@@ -16,6 +16,7 @@ library(scales) #personalizar escalas de ejes en ggplot2
 library(pheatmap) #mapa de calor
 library(dplyr) #manipulación  de data frames
 
+
 # 2. Descargar el archivo, ver su estructura y las primeras filas
 
 # URL del archivo CSV en GitHub en versión raw
@@ -56,6 +57,8 @@ se <- SummarizedExperiment(
   colData = colData
 )
 se
+
+
 
 # Ver la estructura del objeto SummarizedExperiment
 str(se)
